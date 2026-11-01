@@ -444,6 +444,16 @@ input,select,textarea{font-size:16px!important}
 </head>
 <body>
 
+<!-- فعال‌سازی -->
+<div class="lock" id="act" hidden style="z-index:110;padding:24px;text-align:center">
+  <div style="font-size:34px">🔑</div>
+  <div style="font-size:17px;font-weight:700">فعال‌سازی برنامه</div>
+  <div class="locktitle">کد فعال‌سازی را که از سازنده گرفتی وارد کن</div>
+  <input id="actInput" dir="ltr" autocomplete="off" autocapitalize="characters" placeholder="XXXX-XXXX-XXXX" style="max-width:280px;text-align:center;font-size:20px;letter-spacing:2px">
+  <button class="save" id="actBtn" style="max-width:280px">فعال‌سازی</button>
+  <div class="small" id="actMsg" style="color:#c64c48"></div>
+</div>
+
 <!-- قفل -->
 <div class="lock" id="lock" hidden>
   <div style="font-size:34px">🔒</div>
@@ -882,7 +892,7 @@ function renderRemBanner(){
 }
 
 async function fireNotifications(){
-  if(!('Notification' in window)||Notification.permission!=='granted') return;
+  if(!activated()||!('Notification' in window)||Notification.permission!=='granted') return;
   if(DB.settings.pin && !$('#lock').hidden) return;
   const t=todayJdn(), n=DB.settings.remindDays;
   let reg=null; try{ if(navigator.serviceWorker) reg=await navigator.serviceWorker.getRegistration(); }catch(e){}
@@ -1307,6 +1317,23 @@ function drawDots(){
   $$('#dots i').forEach((d,i)=>d.classList.toggle('f',i<pinBuf.length));
 }
 
+/* ===== فعال‌سازی ===== */
+const ACT_SALT='hs7#K2';
+const ACT_HASHES=["16cstzemsy7", "1xyrndk9aeh", "1a2ri9e4we6", "nwzlq46fre", "p3q80upqgo", "7e63j1uh76", "vrhjumzj0a", "n4gcylqnzi", "7ay29j4wws", "951e1ykfr1", "2dolw2t8l0d", "27f0fkfgrkp", "2c7soz2nne5", "1t4is3o8ddn", "1fcq1ynwxt9", "mv9rswv0c0", "d7hica6ca0", "1we1dqu1s8y", "esk0rs175w", "1mdxfehrwi2"];
+const h53=(str,seed=0)=>{let h1=0xdeadbeef^seed,h2=0x41c6ce57^seed;for(let i=0,ch;i<str.length;i++){ch=str.charCodeAt(i);h1=Math.imul(h1^ch,2654435761);h2=Math.imul(h2^ch,1597334677);}h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);return (4294967296*(2097151&h2)+(h1>>>0)).toString(36);};
+const normCode=s=>String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+const codeOk=c=>{c=normCode(c);return c.length===12&&ACT_HASHES.includes(h53(ACT_SALT+c));};
+const activated=()=>{try{return codeOk(localStorage.getItem('act_code'));}catch(e){return false;}};
+function gate(){ $('#act').hidden=activated(); }
+$('#actInput').addEventListener('input',e=>{ e.target.value=normCode(e.target.value).slice(0,12).replace(/(.{4})(?=.)/g,'$1-'); $('#actMsg').textContent=''; });
+function tryAct(){
+  const v=$('#actInput').value;
+  if(codeOk(v)){ try{localStorage.setItem('act_code',normCode(v));}catch(e){} $('#act').hidden=true; fireNotifications(); }
+  else $('#actMsg').textContent='کد اشتباه است';
+}
+$('#actBtn').addEventListener('click',tryAct);
+$('#actInput').addEventListener('keydown',e=>{ if(e.key==='Enter') tryAct(); });
+
 /* ================= شروع ================= */
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]'); if(b) showTab(b.dataset.go);});
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ autoBackup(); renderRemBanner(); } });
@@ -1319,7 +1346,7 @@ function boot(){
   setInterval(fireNotifications, 60000);
 }
 if('serviceWorker' in navigator && /^https?:/.test(location.protocol)) navigator.serviceWorker.register('./sw.js').catch(()=>{});
-boot();
+boot(); gate();
 </script>
 </body>
 </html>
