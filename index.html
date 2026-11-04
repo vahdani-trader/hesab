@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="حساب موبایل">
+<meta name="apple-mobile-web-app-title" content="حساب‌کتاب">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#246b5b"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>حساب موبایل</title>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#246b5b"><link rel="apple-touch-icon" href="apple-touch-icon.png"><title>حساب‌کتاب</title>
 <style>
   @font-face {
   font-family: 'Vazirmatn';
@@ -131,7 +131,7 @@ header h1{font-size:20px;font-weight:800;letter-spacing:-.3px;color:#183d34}
 input,select,textarea{border:1px solid #dce7e2;border-radius:12px;background:#fbfdfc;outline:none}input:focus,select:focus,textarea:focus{border-color:#5a9b88;box-shadow:0 0 0 3px rgba(36,107,91,.1)}
 button{transition:transform .12s ease,filter .12s ease}button:active{transform:scale(.98)}
 @media(min-width:600px){body{max-width:560px;margin:0 auto;box-shadow:0 0 40px rgba(20,45,39,.06);min-height:100vh}header{max-width:560px}}
-/* ===== تم سبز و طلایی حساب موبایل ===== */
+/* ===== تم سبز و طلایی حساب‌کتاب ===== */
 
 :root {
   --bg: #031c14;
@@ -440,6 +440,27 @@ button {
 }
 input,select,textarea{font-size:16px!important}
 .sheet{padding-bottom:calc(30px + env(safe-area-inset-bottom))}
+html,body{overscroll-behavior-y:contain}
+.keypad{direction:ltr}
+.sheet{position:relative}
+.backArrow{position:absolute;left:12px;top:10px;width:36px;height:36px;border-radius:50%;border:0;background:rgba(36,107,91,.12);color:#246b5b;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;font-family:inherit;z-index:5;padding:0}
+.backArrow[hidden]{display:none}
+header #backBtn{top:50%;transform:translateY(-50%);left:14px}
+#printArea{display:none}
+#printArea h1{font-size:20px;margin:0 0 2px;color:#246b5b}
+#printArea h3{font-size:14px;margin:14px 0 4px}
+#printArea .pa-top{border-bottom:2px solid #246b5b;padding-bottom:8px;margin-bottom:10px}
+#printArea table{width:100%;border-collapse:collapse;margin:4px 0}
+#printArea th,#printArea td{border:1px solid #bbb;padding:5px 7px;text-align:right;font-size:12.5px}
+#printArea th{background:#eee}
+#printArea .sum td:first-child{width:62%}
+#printArea .net td{font-weight:700;background:#f3f6f5}
+@media print{
+  @page{margin:12mm}
+  body.printing>*:not(#printArea){display:none!important}
+  body.printing{max-width:none!important;margin:0!important;padding:0!important;box-shadow:none!important;background:#fff!important}
+  body.printing #printArea{display:block!important;direction:rtl;color:#000;background:#fff}
+}
 </style>
 </head>
 <body>
@@ -462,7 +483,7 @@ input,select,textarea{font-size:16px!important}
   <div class="keypad" id="keypad"></div>
 </div>
 
-<header><h1 id="pageTitle">چک‌ها</h1></header>
+<header><h1 id="pageTitle">چک‌ها</h1><button type="button" id="backBtn" class="backArrow" aria-label="بازگشت" hidden>←</button></header>
 
 <main>
   <!-- ===== صفحه خانه ===== -->
@@ -492,8 +513,8 @@ input,select,textarea{font-size:16px!important}
 
     <div class="home-card"><span>چک دریافتی در جریان</span><strong id="homeOpenIn">۰</strong></div>
     <div class="home-card"><span>چک پرداختی در جریان</span><strong id="homeOpenOut">۰</strong></div>
-    <div class="home-card"><span>گوشی موجود (سرمایه)</span><strong id="homeStock">۰</strong></div>
-    <div class="home-card"><span>سود گوشی‌های فروخته‌شده</span><strong id="homeProfit">۰</strong></div>
+    <div class="home-card"><span>کالا موجود (سرمایه)</span><strong id="homeStock">۰</strong></div>
+    <div class="home-card"><span>سود کالاهای فروخته‌شده</span><strong id="homeProfit">۰</strong></div>
     <div class="home-card"><span>سود چک‌های وصول‌شده</span><strong id="homeInterest">۰</strong></div>
 
   </div>
@@ -555,6 +576,11 @@ input,select,textarea{font-size:16px!important}
   <!-- ===== تنظیمات ===== -->
   <section id="view-settings" hidden>
     <div class="card">
+      <div class="name">نام فروشنده (بالای PDF)</div>
+      <div class="meta">اسم خودت یا مغازه که بالای صورت‌حساب چاپ می‌شود</div>
+      <input id="setSeller" placeholder="مثلاً: مغازه‌ی ...">
+    </div>
+    <div class="card">
       <div class="name">یادآوری چک</div>
       <div class="meta">چند روز قبل از سررسید هشدار بدهد؟</div>
       <select id="setDays"></select>
@@ -606,7 +632,7 @@ input,select,textarea{font-size:16px!important}
   </button>
 
   <button data-tab="phones">
-    <span class="ic">📱</span>گوشی‌ها
+    <span class="ic">📦</span>کالاها
   </button>
 
   <button data-tab="people">
@@ -641,7 +667,7 @@ input,select,textarea{font-size:16px!important}
     </div>
     <label>تاریخ سررسید (شمسی)</label>
     <div class="dates" id="cDate"></div>
-    <div id="fInterest"><label>مبلغ اصل / قیمت نقدی (تومان)</label><input id="fPrincipal" inputmode="numeric" placeholder="قیمت نقدی گوشی">
+    <div id="fInterest"><label>مبلغ اصل / قیمت نقدی (تومان)</label><input id="fPrincipal" inputmode="numeric" placeholder="قیمت نقدی کالا">
     <label>سود ماهانه چک</label><select id="fRate"><option value="0">بدون سود</option><option value="5">5٪ در ماه</option><option value="6">6٪ در ماه</option><option value="7">7٪ در ماه</option><option value="8">8٪ در ماه</option><option value="9">9٪ در ماه</option><option value="10">10٪ در ماه</option><option value="11">11٪ در ماه</option><option value="12">12٪ در ماه</option><option value="13">13٪ در ماه</option><option value="14">14٪ در ماه</option><option value="15">15٪ در ماه</option></select>
     <div class="small" id="fCalc"></div></div>
     <label>وضعیت</label>
@@ -670,9 +696,9 @@ input,select,textarea{font-size:16px!important}
 </div></div>
 <datalist id="names"></datalist>
 <div class="modal" id="phoneModal"><div class="sheet">
-<h2 id="phTitle">گوشی جدید</h2>
-<label>مدل گوشی</label><input id="phModel" placeholder="آیفون ۱۳ — ۱۲۸ گیگ">
-<label>IMEI / سریال</label><input id="phImei" inputmode="numeric" placeholder="اختیاری">
+<h2 id="phTitle">کالای جدید</h2>
+<label>نام کالا</label><input id="phModel" placeholder="نام یا مدل کالا">
+<label>سریال / شناسه</label><input id="phImei" placeholder="اختیاری">
 <label>قیمت خرید (تومان)</label><input id="phBuy" inputmode="numeric">
 <label>خریده‌شده از</label><input id="phFrom" list="names" placeholder="نام فروشنده">
 <label>تاریخ خرید</label><div class="dates" id="phBuyDate"></div>
@@ -687,6 +713,7 @@ input,select,textarea{font-size:16px!important}
   <div class="sheet">
     <h2 id="personTitle">—</h2>
     <div id="personBody"></div>
+    <button class="save" id="personPdf">📄 خروجی PDF</button>
     <button class="cancel" id="personClose">بستن</button>
   </div>
 </div>
@@ -701,6 +728,7 @@ input,select,textarea{font-size:16px!important}
   </div>
 </div>
 
+<div id="printArea"></div>
 <script>
 /* ================= تاریخ شمسی ================= */
 const div=(a,b)=>Math.trunc(a/b), mod=(a,b)=>a-div(a,b)*b;
@@ -786,12 +814,13 @@ const TITLES = {
   home: 'خانه',
   checks: 'چک‌ها',
   cash: 'نقدی',
-  phones: 'گوشی‌ها',
+  phones: 'کالاها',
   people: 'طرف‌حساب‌ها',
   settings: 'تنظیمات'
 };
 
 function showTab(t) {
+  try{ sessionStorage.setItem('lastTab',t); }catch(e){}
 
   ['home', 'checks', 'cash', 'phones', 'people', 'settings'].forEach(x => {
     document.getElementById('view-' + x).hidden = (x !== t);
@@ -802,6 +831,7 @@ function showTab(t) {
   });
 
   $('#pageTitle').textContent = TITLES[t];
+  $('#backBtn').hidden = (t === 'home');
   if (t === 'home') renderHome();
 
   if (t === 'checks') renderChecks();
@@ -1025,9 +1055,9 @@ $('#cashList').addEventListener('click',e=>{const b=e.target.closest('button');i
 $('#fabCash').addEventListener('click',()=>openCashForm(null));
 $('#cancelCash').addEventListener('click',()=>$('#cashModal').classList.remove('on'));
 $('#cashModal').addEventListener('click',e=>{if(e.target.id==='cashModal')$('#cashModal').classList.remove('on');});
-function openCashForm(c){editCashId=c?c.id:null;$('#cashKind').value=(c&&c.kind)||'in';$('#cashTitle').textContent=c?'ویرایش تراکنش نقدی':'تراکنش نقدی جدید';$('#cashAmount').value=c?Number(c.amount).toLocaleString('en-US'):'';$('#cashName').value=c?c.name||'':'';$('#cashPhone').value=c?c.phone||'':'';$('#cashNote').value=c?c.note||'':'';setDP('cashDate',c&&c.date?{jy:c.date.dy,jm:c.date.dm,jd:c.date.dd}:null);$('#cashModal').classList.add('on');}
+function openCashForm(c){editCashId=c?c.id:null;$('#cashKind').value=(c&&c.kind)||'in';$('#cashTitle').textContent=c?'ویرایش تراکنش نقدی':'تراکنش نقدی جدید';$('#cashAmount').value=c?Number(c.amount).toLocaleString('en-US'):'';$('#cashName').value=c?c.name||'':'';$('#cashPhone').value=c?c.phone||'':'';$('#cashNote').value=c?c.note||'':'';setDP('cashd',c&&c.date?{jy:c.date.dy,jm:c.date.dm,jd:c.date.dd}:null);$('#cashModal').classList.add('on');}
 $('#cashAmount').addEventListener('input',e=>{let v=e.target.value.replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[^\d]/g,'');e.target.value=v?Number(v).toLocaleString('en-US'):'';});
-$('#saveCash').addEventListener('click',()=>{const amount=Number($('#cashAmount').value.replace(/,/g,''))||0;const name=norm($('#cashName').value);if(!amount){alert('مبلغ را وارد کن');return;}if(!name){alert('نام طرف حساب را وارد کن');return;}const d=getDP('cashDate');const obj={id:editCashId||String(Date.now()),kind:$('#cashKind').value,amount,name,phone:$('#cashPhone').value.trim(),date:{dy:d.dy,dm:d.dm,dd:d.dd},note:$('#cashNote').value.trim(),created:editCashId?(DB.cash.find(x=>x.id===editCashId)?.created||Date.now()):Date.now()};if(editCashId){const i=DB.cash.findIndex(x=>x.id===editCashId);if(i>=0)DB.cash[i]=obj;}else DB.cash.push(obj);saveDB();$('#cashModal').classList.remove('on');renderCash();});
+$('#saveCash').addEventListener('click',()=>{const amount=Number($('#cashAmount').value.replace(/,/g,''))||0;const name=norm($('#cashName').value);if(!amount){alert('مبلغ را وارد کن');return;}if(!name){alert('نام طرف حساب را وارد کن');return;}const d=getDP('cashd');const obj={id:editCashId||String(Date.now()),kind:$('#cashKind').value,amount,name,phone:$('#cashPhone').value.trim(),date:{dy:d.dy,dm:d.dm,dd:d.dd},note:$('#cashNote').value.trim(),created:editCashId?(DB.cash.find(x=>x.id===editCashId)?.created||Date.now()):Date.now()};if(editCashId){const i=DB.cash.findIndex(x=>x.id===editCashId);if(i>=0)DB.cash[i]=obj;}else DB.cash.push(obj);saveDB();$('#cashModal').classList.remove('on');renderCash();});
 
 /* ================= مشتریان ================= */
 let peopleFilter='all';
@@ -1060,7 +1090,7 @@ function renderPeople(){
   if(peopleFilter==='debt') list=list.filter(p=>p.net>0);
   if(peopleFilter==='cred') list=list.filter(p=>p.net<0);
   if(!list.length){
-    $('#ppList').innerHTML='<div class="empty">هنوز طرف حسابی ثبت نشده.<br>با ثبت چک یا گوشی، خودکار ساخته می‌شود.</div>';
+    $('#ppList').innerHTML='<div class="empty">هنوز طرف حسابی ثبت نشده.<br>با ثبت چک یا کالا، خودکار ساخته می‌شود.</div>';
     return;
   }
   $('#ppList').innerHTML=list.map(p=>`
@@ -1070,7 +1100,7 @@ function renderPeople(){
         <span class="amt ${p.net>=0?'in':'out'}">${signed(p.net)}</span>
       </div>
       <div class="meta">
-        ${p.phone?fa(p.phone)+' · ':''}${fa(p.checks.length)} چک · ${fa(p.cash.length)} نقدی · ${fa(p.phones.length)} گوشی
+        ${p.phone?fa(p.phone)+' · ':''}${fa(p.checks.length)} چک · ${fa(p.cash.length)} نقدی · ${fa(p.phones.length)} کالا
         <br>${p.net>0?'بدهکار به ما':p.net<0?'طلبکار از ما':'تسویه'}
       </div>
     </div>`).join('');
@@ -1118,12 +1148,53 @@ function openPerson(name){
     h+=`<h2 style="font-size:14px;margin-top:14px">دریافت‌های نقدی</h2>`;
     h+=p.cash.slice().sort((a,b)=>b.created-a.created).map(c=>`<div class="card" style="margin:8px 0"><div class="row"><span class="name" style="font-size:13px">${c.date?dateStr(c.date):''}</span><span class="amt ${c.kind==='out'?'out':'in'}" style="font-size:13px">${money(c.amount)}</span></div><div class="meta">${esc(c.note||(c.kind==='out'?'پرداخت نقدی':'دریافت نقدی'))}</div></div>`).join('');
   }
-  if(p.phones.length){h+=`<h2 style="font-size:14px;margin-top:14px">گوشی‌ها</h2>`+p.phones.map(x=>{const b=pkey(x.from)===pkey(p.name);return `<div class="card" style="margin:8px 0"><div class="row"><span class="name" style="font-size:13px">${esc(x.model)}</span><span class="amt ${b?'out':'in'}" style="font-size:13px">${b?'خرید '+money(x.buy):'فروش '+money(x.sell)}</span></div></div>`;}).join('');}
+  if(p.phones.length){h+=`<h2 style="font-size:14px;margin-top:14px">کالاها</h2>`+p.phones.map(x=>{const b=pkey(x.from)===pkey(p.name);return `<div class="card" style="margin:8px 0"><div class="row"><span class="name" style="font-size:13px">${esc(x.model)}</span><span class="amt ${b?'out':'in'}" style="font-size:13px">${b?'خرید '+money(x.buy):'فروش '+money(x.sell)}</span></div></div>`;}).join('');}
+  curPerson=p.name;
   $('#personBody').innerHTML=h;
   $('#personModal').classList.add('on');
 }
 
-/* ================= گوشی‌ها ================= */
+/* ===== صورت‌حساب PDF ===== */
+let curPerson=null;
+function printStatement(){
+  const p=buildPeople().find(x=>x.name===curPerson); if(!p) return;
+  const k=pkey(p.name), t=d2j(todayJdn());
+  const sum=(a,f)=>a.reduce((n,x)=>n+f(x),0);
+  const dj=c=>j2d(c.dy,c.dm,c.dd);
+  const sold=DB.phones.filter(x=>x.sell!=null&&pkey(x.to)===k).sort((a,b)=>(a.sellDate?j2d(a.sellDate.dy,a.sellDate.dm,a.sellDate.dd):0)-(b.sellDate?j2d(b.sellDate.dy,b.sellDate.dm,b.sellDate.dd):0));
+  const bought=DB.phones.filter(x=>pkey(x.from)===k);
+  const cashIn=sum(p.cash.filter(c=>c.kind!=='out'),c=>+c.amount||0), cashOut=sum(p.cash.filter(c=>c.kind==='out'),c=>+c.amount||0);
+  const chs=p.checks.slice().sort((a,b)=>dj(a)-dj(b)), live=c=>c.status!=='ret';
+  const inDone=sum(chs.filter(c=>c.type==='in'&&c.status==='done'),c=>c.amount), inOpen=sum(chs.filter(c=>c.type==='in'&&c.status==='open'),c=>c.amount), outSum=sum(chs.filter(c=>c.type==='out'&&live(c)),c=>c.amount);
+  const tb=(title,head,rows)=>rows.length?`<h3>${title}</h3><table><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table>`:'';
+  const sr=(a,b)=>`<tr><td>${a}</td><td>${b}</td></tr>`;
+  let h=`<div class="pa-top"><h1>${esc(DB.settings.seller||'صورت‌حساب')}</h1><div>صورت‌حساب مشتری: <b>${esc(p.name)}</b>${p.phone?' · '+fa(esc(p.phone)):''}</div><div>تاریخ: ${dateStr(t)}</div></div>`;
+  h+=tb('کالاهای خریداری‌شده',['نام کالا','سریال','تاریخ','قیمت (تومان)'],sold.map(x=>[esc(x.model),esc(x.imei||'—'),x.sellDate?dateStr(x.sellDate):'—',money(x.sell)]).concat(sold.length?[['<b>جمع</b>','','','<b>'+money(sum(sold,x=>x.sell))+'</b>']]:[]));
+  h+=tb('کالاهای خریداری‌شده از شما',['نام کالا','تاریخ','قیمت (تومان)'],bought.map(x=>[esc(x.model),x.buyDate?dateStr(x.buyDate):'—',money(x.buy)]));
+  h+=tb('پرداخت‌های نقدی',['تاریخ','نوع','مبلغ (تومان)','توضیح'],p.cash.slice().sort((a,b)=>(a.created||0)-(b.created||0)).map(c=>[c.date?dateStr(c.date):'—',c.kind==='out'?'پرداخت به شما':'دریافت از شما',money(c.amount),esc(c.note||'')]));
+  h+=tb('چک‌ها',['نوع','شماره','بانک','سررسید','مبلغ (تومان)','وضعیت'],chs.map(c=>[c.type==='in'?'دریافتی از شما':'پرداختی به شما',c.no?fa(esc(c.no)):'—',esc(c.bank||'—'),dateStr(c),money(c.amount),statusInfo(c).txt]));
+  h+='<h3>خلاصه</h3><table class="sum">';
+  if(sold.length) h+=sr('جمع کالاهای خریداری‌شده',money(sum(sold,x=>x.sell)));
+  h+=sr('جمع پرداخت نقدی شما',money(cashIn));
+  h+=sr('جمع چک‌های وصول‌شده',money(inDone));
+  h+=sr('جمع چک‌های در جریان',money(inOpen));
+  if(bought.length) h+=sr('جمع خرید ما از شما',money(sum(bought,x=>x.buy)));
+  if(cashOut) h+=sr('جمع پرداخت نقدی ما به شما',money(cashOut));
+  if(outSum) h+=sr('جمع چک‌های ما به شما',money(outSum));
+  const nt=Math.round(p.net);
+  h+=`<tr class="net"><td>مانده حساب</td><td>${nt>0?'بدهکار: '+money(nt):nt<0?'طلبکار: '+money(-nt):'تسویه'}</td></tr></table>`;
+  $('#printArea').innerHTML=h;
+  const old=document.title; document.title='صورت‌حساب '+p.name;
+  document.body.classList.add('printing');
+  const done=()=>{document.body.classList.remove('printing');document.title=old;window.removeEventListener('afterprint',done);};
+  window.addEventListener('afterprint',done);
+  setTimeout(()=>window.print(),80);
+}
+$('#personPdf').addEventListener('click',printStatement);
+$('#setSeller').addEventListener('input',e=>{DB.settings.seller=e.target.value.trim();saveDB();});
+$('#setSeller').value=DB.settings.seller||'';
+
+/* ================= کالاها ================= */
 let phFilter='all', editPhId=null;
 const num=v=>Number(String(v).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[^\d]/g,''))||0;
 ['phBuy','phSell'].forEach(id=>$('#'+id).addEventListener('input',e=>{const v=num(e.target.value);e.target.value=v?v.toLocaleString('en-US'):'';}));
@@ -1131,19 +1202,19 @@ function phoneStats(){let n=0,cap=0,profit=0;DB.phones.forEach(x=>{if(x.sell==nu
 function renderPhones(){
   const s=phoneStats(); $('#phStock').textContent=fa(s.n); $('#phCap').textContent=money(s.cap); $('#phProfit').textContent=signed(s.profit);
   const l=DB.phones.slice().sort((a,b)=>(b.created||0)-(a.created||0)).filter(x=>phFilter==='all'||(phFilter==='stock')===(x.sell==null));
-  if(!l.length){$('#phList').innerHTML='<div class="empty">گوشی‌ای ثبت نشده.<br>با دکمه + شروع کن.</div>';return;}
-  $('#phList').innerHTML=l.map(x=>{const sold=x.sell!=null;return `<div class="card"><div class="row"><span class="name">${esc(x.model)}</span><span class="badge ${sold?'done':'stock'}">${sold?'فروخته‌شده':'موجود'}</span></div><div class="meta">${x.imei?'IMEI: '+fa(esc(x.imei))+'<br>':''}خرید: ${money(x.buy)}${x.from?' از '+esc(x.from):''}${x.buyDate?' · '+dateStr(x.buyDate):''}${sold?`<br>فروش: ${money(x.sell)}${x.to?' به '+esc(x.to):''}${x.sellDate?' · '+dateStr(x.sellDate):''}<br>سود: <b>${signed(x.sell-x.buy)}</b>`:''}${x.note?'<br>'+esc(x.note):''}</div><div class="actions"><button data-act="edit" data-id="${x.id}">${sold?'ویرایش':'ویرایش / ثبت فروش'}</button><button class="del" data-act="del" data-id="${x.id}">حذف</button></div></div>`;}).join('');
+  if(!l.length){$('#phList').innerHTML='<div class="empty">کالایی ثبت نشده.<br>با دکمه + شروع کن.</div>';return;}
+  $('#phList').innerHTML=l.map(x=>{const sold=x.sell!=null;return `<div class="card"><div class="row"><span class="name">${esc(x.model)}</span><span class="badge ${sold?'done':'stock'}">${sold?'فروخته‌شده':'موجود'}</span></div><div class="meta">${x.imei?'سریال: '+fa(esc(x.imei))+'<br>':''}خرید: ${money(x.buy)}${x.from?' از '+esc(x.from):''}${x.buyDate?' · '+dateStr(x.buyDate):''}${sold?`<br>فروش: ${money(x.sell)}${x.to?' به '+esc(x.to):''}${x.sellDate?' · '+dateStr(x.sellDate):''}<br>سود: <b>${signed(x.sell-x.buy)}</b>`:''}${x.note?'<br>'+esc(x.note):''}</div><div class="actions"><button data-act="edit" data-id="${x.id}">${sold?'ویرایش':'ویرایش / ثبت فروش'}</button><button class="del" data-act="del" data-id="${x.id}">حذف</button></div></div>`;}).join('');
 }
 $('#phFilters').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;phFilter=b.dataset.ph;$$('#phFilters button').forEach(x=>x.classList.toggle('on',x===b));renderPhones();});
 $('#phList').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const x=DB.phones.find(v=>v.id===b.dataset.id);if(!x)return;
-  if(b.dataset.act==='del'){if(confirm('این گوشی حذف شود؟')){snapshot();DB.phones=DB.phones.filter(v=>v.id!==x.id);saveDB();renderPhones();}}else openPhoneForm(x);});
+  if(b.dataset.act==='del'){if(confirm('این کالا حذف شود؟')){snapshot();DB.phones=DB.phones.filter(v=>v.id!==x.id);saveDB();renderPhones();}}else openPhoneForm(x);});
 $('#fabPhone').addEventListener('click',()=>openPhoneForm(null));
 const closePh=()=>$('#phoneModal').classList.remove('on');
 $('#cancelPhone').addEventListener('click',closePh);
 $('#phoneModal').addEventListener('click',e=>{if(e.target.id==='phoneModal')closePh();});
 function openPhoneForm(x){
   editPhId=x?x.id:null; fillNames();
-  $('#phTitle').textContent=x?'ویرایش گوشی':'گوشی جدید';
+  $('#phTitle').textContent=x?'ویرایش کالا':'کالای جدید';
   $('#phModel').value=x?x.model:''; $('#phImei').value=x?x.imei||'':'';
   $('#phBuy').value=x?x.buy.toLocaleString('en-US'):''; $('#phFrom').value=x?x.from||'':'';
   $('#phSell').value=x&&x.sell!=null?x.sell.toLocaleString('en-US'):''; $('#phTo').value=x?x.to||'':'';
@@ -1154,7 +1225,7 @@ function openPhoneForm(x){
 }
 $('#savePhone').addEventListener('click',()=>{
   const model=norm($('#phModel').value), buy=num($('#phBuy').value), sr=$('#phSell').value.trim(), sell=sr?num(sr):null;
-  if(!model){alert('مدل گوشی را وارد کن');return;}
+  if(!model){alert('نام کالا را وارد کن');return;}
   if(!buy){alert('قیمت خرید را وارد کن');return;}
   const o={id:editPhId||String(Date.now()),model,imei:$('#phImei').value.trim(),buy,from:norm($('#phFrom').value),buyDate:getDP('pb'),sell,to:sell!=null?norm($('#phTo').value):'',sellDate:sell!=null?getDP('ps'):null,note:$('#phNote').value.trim(),created:Date.now()};
   if(editPhId){const i=DB.phones.findIndex(v=>v.id===editPhId);if(i>=0){o.created=DB.phones[i].created||o.created;DB.phones[i]=o;}}else DB.phones.push(o);
@@ -1337,10 +1408,13 @@ $('#actInput').addEventListener('keydown',e=>{ if(e.key==='Enter') tryAct(); });
 /* ================= شروع ================= */
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]'); if(b) showTab(b.dataset.go);});
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ autoBackup(); renderRemBanner(); } });
+$('#backBtn').addEventListener('click',()=>showTab('home'));
+document.querySelectorAll('.modal .sheet').forEach(sh=>{const b=document.createElement('button');b.type='button';b.className='backArrow';b.textContent='←';b.setAttribute('aria-label','بازگشت');b.addEventListener('click',()=>sh.closest('.modal').classList.remove('on'));sh.insertBefore(b,sh.firstChild);});
 function boot(){
   try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
   autoBackup();
-  showTab('checks');
+  let st='checks'; try{ const x=sessionStorage.getItem('lastTab'); if(['home','checks','cash','phones','people','settings'].includes(x)) st=x; }catch(e){}
+  showTab(st);
   if(DB.settings.pin){ $('#lock').hidden=false; drawDots(); }
   else { fireNotifications(); }
   setInterval(fireNotifications, 60000);
