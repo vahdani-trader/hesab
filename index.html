@@ -1078,6 +1078,7 @@ function renderHome(){
     DB.checks.map(c=>({t:c.created||0,txt:(c.type==='in'?'چک دریافتی از ':'چک پرداختی به ')+c.name,amt:(c.type==='in'?'+':'−')+money(c.amount)}))
   ).sort((a,b)=>b.t-a.t).slice(0,5);
     // ===== نمایش خلاصه اقساط =====
+  { const oldInst=$('#instBlock'); if(oldInst) oldInst.remove(); }
   let instHtml = '<h3 style="margin-top:20px;">📦 اقساط در جریان</h3>';
   let hasGroups = false;
   const activeGroups = {};
@@ -1094,7 +1095,7 @@ function renderHome(){
     const data = activeGroups[g];
     instHtml += `<div class="card" style="margin:10px 0; border-right:4px solid var(--gold);">
         <div class="row">
-          <span class="name" style="font-size:14px">${g}</span>
+          <span class="name" style="font-size:14px">${esc(g)}</span>
           <span class="amt in" style="font-size:13px">${money(data.amount)}</span>
         </div>
         <div class="meta" style="margin-top:5px">در انتظار وصول ${fa(data.total)} فقره چک</div>
@@ -1103,7 +1104,7 @@ function renderHome(){
 
   const recentTitle = document.querySelector('#view-home h3');
   if (recentTitle && hasGroups) {
-    recentTitle.insertAdjacentHTML('beforebegin', instHtml);
+    recentTitle.insertAdjacentHTML('beforebegin', '<div id="instBlock">'+instHtml+'</div>');
   }
   $('#homeRecent').innerHTML=ev.length?ev.map(e=>`<div class="card"><div class="row"><span class="name" style="font-size:13px">${esc(e.txt)}</span><span class="amt" style="font-size:13px">${e.amt}</span></div></div>`).join(''):'<div class="empty">هنوز فعالیتی ثبت نشده.</div>';
 }
@@ -1128,8 +1129,8 @@ function buildPeople(){
     const p=m.get(k); if(phone && !p.phone) p.phone=phone; return p;
   };
   // bal>0 یعنی طرف‌حساب بدهکار به ماست
-  DB.checks.forEach(c=>{ const p=add(c.name,c.phone); if(!p) return; p.checks.push(c); if(c.status!=='ret') p.bal+=(c.type==='in'?1:-1)*c.amount; });
-  DB.cash.forEach(c=>{ const p=add(c.name,c.phone); if(!p) return; p.cash.push(c); p.bal+=(c.kind==='in'?1:-1)*(Number(c.amount)||0); });
+  DB.checks.forEach(c=>{ const p=add(c.name,c.phone); if(!p) return; p.checks.push(c); if(c.status!=='ret') p.bal+=(c.type==='in'?-1:1)*c.amount; });
+  DB.cash.forEach(c=>{ const p=add(c.name,c.phone); if(!p) return; p.cash.push(c); p.bal+=(c.kind==='out'?1:-1)*(Number(c.amount)||0); });
   DB.phones.forEach(x=>{
     const f=add(x.from); if(f){ f.phones.push(x); f.bal-=x.buy; }
     if(x.sell!=null){ const t=add(x.to); if(t){ if(!t.phones.includes(x)) t.phones.push(x); t.bal+=x.sell; } }
@@ -1207,7 +1208,7 @@ function openPerson(name){
       const g = groups[gName];
       const percent = Math.round((g.done / g.total) * 100);
       h += `<div class="card" style="margin:10px 0; border:1px solid rgba(233,184,63,.4);">
-        <div class="row"><span class="name" style="color:var(--gold-light)">📦 ${gName}</span></div>
+        <div class="row"><span class="name" style="color:var(--gold-light)">📦 ${esc(gName)}</span></div>
         <div class="meta" style="margin-top:5px">
           مبلغ کل: <b>${money(g.amount)}</b> تومان<br>
           پیشرفت: ${fa(g.done)} از ${fa(g.total)} فقره تسویه شده
@@ -1495,17 +1496,41 @@ const codeOk=c=>{c=normCode(c);return c.length===12&&ACT_HASHES.includes(h53(ACT
 const activated=()=>{try{return codeOk(localStorage.getItem('act_code'));}catch(e){return false;}};
 function gate(){ $('#act').hidden=activated(); }
 $('#actInput').addEventListener('input',e=>{ e.target.value=normCode(e.target.value).slice(0,12).replace(/(.{4})(?=.)/g,'$1-'); $('#actMsg').textContent=''; });
-function tryAct(){
+const LICENSE_URL='';   // آدرس Web App گوگل (بعد از ساخت اسکریپت اینجا گذاشته می‌شود)
+const devId=()=>{ try{ let d=localStorage.getItem('dev_id'); if(!d){ d=Array.from({length:16},()=>Math.floor(Math.random()*16).toString(16)).join(''); localStorage.setItem('dev_id',d);} return d; }catch(e){ return 'nodev'; } };
+async function licCheck(code){   // 'ok' | 'deny' | 'err'
+  if(!LICENSE_URL) return 'ok';
+  try{
+    const r=await fetch(LICENSE_URL+'?code='+encodeURIComponent(code)+'&dev='+devId(),{cache:'no-store'});
+    const j=await r.json();
+    return j&&j.ok?'ok':'deny';
+  }catch(e){ return 'err'; }
+}
+async function tryAct(){
   const v=$('#actInput').value;
-  if(codeOk(v)){ try{localStorage.setItem('act_code',normCode(v));}catch(e){} $('#act').hidden=true; fireNotifications(); }
-  else $('#actMsg').textContent='کد اشتباه است';
+  if(!codeOk(v)){ $('#actMsg').textContent='کد اشتباه است'; return; }
+  const c=normCode(v);
+  $('#actMsg').textContent='در حال بررسی...';
+  const r=await licCheck(c);
+  if(r==='deny'){ $('#actMsg').textContent='این کد روی تعداد مجاز گوشی فعال شده یا غیرفعال است. با سازنده تماس بگیر'; return; }
+  try{ localStorage.setItem('act_code',c); if(r==='ok') localStorage.setItem('act_chk',String(Date.now())); else localStorage.removeItem('act_chk'); }catch(e){}
+  $('#act').hidden=true; fireNotifications();
+}
+async function licRecheck(){
+  if(!LICENSE_URL||!activated()) return;
+  const last=+localStorage.getItem('act_chk')||0; if(Date.now()-last<3600000) return;
+  const r=await licCheck(localStorage.getItem('act_code'));
+  if(r==='err') return;
+  if(r==='ok'){ try{localStorage.setItem('act_chk',String(Date.now()));}catch(e){} return; }
+  try{ localStorage.removeItem('act_code'); }catch(e){}
+  gate(); $('#actMsg').textContent='این کد دیگر معتبر نیست؛ با سازنده تماس بگیر';
 }
 $('#actBtn').addEventListener('click',tryAct);
 $('#actInput').addEventListener('keydown',e=>{ if(e.key==='Enter') tryAct(); });
 
 /* ================= شروع ================= */
 document.addEventListener('click',e=>{const b=e.target.closest('[data-go]'); if(b) showTab(b.dataset.go);});
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ autoBackup(); renderRemBanner(); } });
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ autoBackup(); renderRemBanner(); licRecheck(); } });
 $('#backBtn').addEventListener('click',()=>showTab('home'));
 document.querySelectorAll('.modal .sheet').forEach(sh=>{const b=document.createElement('button');b.type='button';b.className='backArrow';b.textContent='←';b.setAttribute('aria-label','بازگشت');b.addEventListener('click',()=>sh.closest('.modal').classList.remove('on'));sh.insertBefore(b,sh.firstChild);});
 // ===== سیستم تایید سفارشی =====
@@ -1539,7 +1564,7 @@ function boot(){
   setInterval(fireNotifications, 60000);
 }
 if('serviceWorker' in navigator && /^https?:/.test(location.protocol)) navigator.serviceWorker.register('./sw.js').catch(()=>{});
-boot(); gate();
+boot(); gate(); licRecheck();
 </script>
 </body>
 </html>
