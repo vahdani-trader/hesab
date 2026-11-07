@@ -1496,7 +1496,7 @@ const codeOk=c=>{c=normCode(c);return c.length===12&&ACT_HASHES.includes(h53(ACT
 const activated=()=>{try{return codeOk(localStorage.getItem('act_code'));}catch(e){return false;}};
 function gate(){ $('#act').hidden=activated(); }
 $('#actInput').addEventListener('input',e=>{ e.target.value=normCode(e.target.value).slice(0,12).replace(/(.{4})(?=.)/g,'$1-'); $('#actMsg').textContent=''; });
-const LICENSE_URL='';   // آدرس Web App گوگل (بعد از ساخت اسکریپت اینجا گذاشته می‌شود)
+const LICENSE_URL='https://script.google.com/macros/s/AKfycbwKtpv-JvkipN0X5kAMjc7ayKqcsACC6TwZOHVaBJMhJsPRnN_Oqpac5BFasRLQ6vXdsA/exec';   // آدرس Web App گوگل (بعد از ساخت اسکریپت اینجا گذاشته می‌شود)
 const devId=()=>{ try{ let d=localStorage.getItem('dev_id'); if(!d){ d=Array.from({length:16},()=>Math.floor(Math.random()*16).toString(16)).join(''); localStorage.setItem('dev_id',d);} return d; }catch(e){ return 'nodev'; } };
 async function licCheck(code){   // 'ok' | 'deny' | 'err'
   if(!LICENSE_URL) return 'ok';
