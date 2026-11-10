@@ -566,7 +566,7 @@ header #backBtn{top:50%;transform:translateY(-50%);left:14px}
   <section id="view-phones" hidden>
   <div class="sum"><div>موجودی<b id="phStock">۰</b></div><div>سرمایه موجود<b id="phCap">۰</b></div><div>سود فروش<b id="phProfit">۰</b></div></div>
   <div class="filters" id="phFilters"><button data-ph="all" class="on">همه</button><button data-ph="stock">موجود</button><button data-ph="sold">فروخته‌شده</button></div>
-  <div id="phList"></div>
+  <button type="button" class="cancel" id="phScan" style="width:100%;margin:6px 0">📷 اسکن کالا</button><div id="phList"></div>
   <button class="fab" id="fabPhone">+</button>
 </section>
 <!-- ===== مشتریان ===== -->
@@ -697,6 +697,7 @@ header #backBtn{top:50%;transform:translateY(-50%);left:14px}
 <div class="modal" id="cashModal"><div class="sheet">
 <h2 id="cashTitle">دریافت نقدی جدید</h2>
 <label>نوع</label><select id="cashKind"><option value="in">دریافت از طرف حساب</option><option value="out">پرداخت به طرف حساب</option></select>
+<label>روش</label><select id="cashMethod"><option value="cash">نقد</option><option value="card">کارت (کارتخوان)</option></select>
 <label>مبلغ (تومان)</label><input id="cashAmount" inputmode="numeric" placeholder="۱٬۰۰۰٬۰۰۰">
 <label>نام طرف حساب</label><input id="cashName" list="names" placeholder="نام مشتری">
 <label>شماره تماس</label><input id="cashPhone" inputmode="tel" placeholder="اختیاری">
@@ -708,13 +709,19 @@ header #backBtn{top:50%;transform:translateY(-50%);left:14px}
 <div class="modal" id="phoneModal"><div class="sheet">
 <h2 id="phTitle">کالای جدید</h2>
 <label>نام کالا</label><input id="phModel" placeholder="نام یا مدل کالا">
-<label>سریال / شناسه</label><input id="phImei" placeholder="اختیاری">
+<label>کد کالا</label><div style="display:flex;gap:8px"><input id="phImei" placeholder="اختیاری" style="flex:1"><button type="button" class="cancel" id="scanBtn" style="width:56px;margin:0">📷</button></div>
 <label>قیمت خرید (تومان)</label><input id="phBuy" inputmode="numeric">
 <label>خریده‌شده از</label><input id="phFrom" list="names" placeholder="نام فروشنده">
 <label>تاریخ خرید</label><div class="dates" id="phBuyDate"></div>
 <label>قیمت فروش (خالی = هنوز موجود)</label><input id="phSell" inputmode="numeric">
 <label>فروخته‌شده به</label><input id="phTo" list="names" placeholder="نام خریدار">
 <label>تاریخ فروش</label><div class="dates" id="phSellDate"></div>
+<div id="phPay" hidden>
+<label>پرداخت مشتری (نقد / کارت / چک)</label>
+<div class="dates"><input id="payCash" inputmode="numeric" placeholder="نقد"><input id="payCard" inputmode="numeric" placeholder="کارت"></div>
+<div id="payChecks"></div>
+<button type="button" class="cancel" id="addPayCheck" style="margin:4px 0">+ چک</button>
+<div class="small" id="payInfo"></div></div>
 <label>توضیح</label><textarea id="phNote" rows="2"></textarea>
 <button class="save" id="savePhone">ذخیره</button><button class="cancel" id="cancelPhone">بستن</button>
 </div></div>
@@ -748,6 +755,7 @@ header #backBtn{top:50%;transform:translateY(-50%);left:14px}
     <button class="cancel" id="confirmNo">انصراف</button>
   </div>
 </div>
+<div class="lock" id="scanner" hidden style="z-index:120;padding:16px"><video id="scanVid" playsinline muted style="width:100%;max-height:60vh;background:#000;border-radius:12px"></video><div class="small" id="scanMsg"></div><button type="button" class="cancel" id="scanClose" style="max-width:280px">بستن</button></div>
 <div id="printArea"></div>
 <script>
 /* ================= تاریخ شمسی ================= */
@@ -1060,7 +1068,7 @@ function renderCash(){
   let list=DB.cash.slice().sort((a,b)=>(b.created||0)-(a.created||0));
   if(cashFilter==='month'){const now=d2j(todayJdn());list=list.filter(c=>c.date&&c.date.dy===now.jy&&c.date.dm===now.jm);}
   if(!list.length){$('#cashList').innerHTML='<div class="empty">تراکنش نقدی ثبت نشده.<br>با دکمه + ثبت کن.</div>';return;}
-  $('#cashList').innerHTML=list.map(c=>{const o=c.kind==='out';return `<div class="card"><div class="row"><span class="name">${esc(c.name||'بدون نام')}</span><span class="amt ${o?'out':'in'}">${o?'−':'+'}${money(c.amount)}</span></div><div class="meta">${o?'پرداخت نقدی · ':''}${c.date?dateStr(c.date):''}${c.phone?' · '+fa(c.phone):''}${c.note?'<br>'+esc(c.note):''}</div><div class="actions"><button data-act="edit" data-id="${c.id}">ویرایش</button><button class="del" data-act="del" data-id="${c.id}">حذف</button></div></div>`;}).join('');
+  $('#cashList').innerHTML=list.map(c=>{const o=c.kind==='out';return `<div class="card"><div class="row"><span class="name">${esc(c.name||'بدون نام')}</span><span class="amt ${o?'out':'in'}">${o?'−':'+'}${money(c.amount)}</span></div><div class="meta">${o?'پرداخت نقدی · ':''}${c.method==='card'?'کارت · ':''}${c.date?dateStr(c.date):''}${c.phone?' · '+fa(c.phone):''}${c.note?'<br>'+esc(c.note):''}</div><div class="actions"><button data-act="edit" data-id="${c.id}">ویرایش</button><button class="del" data-act="del" data-id="${c.id}">حذف</button></div></div>`;}).join('');
 }
 
 /* ================= صفحه خانه ================= */
@@ -1113,9 +1121,9 @@ $('#cashList').addEventListener('click',e=>{const b=e.target.closest('button');i
 $('#fabCash').addEventListener('click',()=>openCashForm(null));
 $('#cancelCash').addEventListener('click',()=>$('#cashModal').classList.remove('on'));
 $('#cashModal').addEventListener('click',e=>{if(e.target.id==='cashModal')$('#cashModal').classList.remove('on');});
-function openCashForm(c){editCashId=c?c.id:null;$('#cashKind').value=(c&&c.kind)||'in';$('#cashTitle').textContent=c?'ویرایش تراکنش نقدی':'تراکنش نقدی جدید';$('#cashAmount').value=c?Number(c.amount).toLocaleString('en-US'):'';$('#cashName').value=c?c.name||'':'';$('#cashPhone').value=c?c.phone||'':'';$('#cashNote').value=c?c.note||'':'';setDP('cashd',c&&c.date?{jy:c.date.dy,jm:c.date.dm,jd:c.date.dd}:null);$('#cashModal').classList.add('on');}
+function openCashForm(c){editCashId=c?c.id:null;$('#cashKind').value=(c&&c.kind)||'in';$('#cashMethod').value=(c&&c.method)||'cash';$('#cashTitle').textContent=c?'ویرایش تراکنش نقدی':'تراکنش نقدی جدید';$('#cashAmount').value=c?Number(c.amount).toLocaleString('en-US'):'';$('#cashName').value=c?c.name||'':'';$('#cashPhone').value=c?c.phone||'':'';$('#cashNote').value=c?c.note||'':'';setDP('cashd',c&&c.date?{jy:c.date.dy,jm:c.date.dm,jd:c.date.dd}:null);$('#cashModal').classList.add('on');}
 $('#cashAmount').addEventListener('input',e=>{let v=e.target.value.replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[^\d]/g,'');e.target.value=v?Number(v).toLocaleString('en-US'):'';});
-$('#saveCash').addEventListener('click',()=>{const amount=Number($('#cashAmount').value.replace(/,/g,''))||0;const name=norm($('#cashName').value);if(!amount){alert('مبلغ را وارد کن');return;}if(!name){alert('نام طرف حساب را وارد کن');return;}const d=getDP('cashd');const obj={id:editCashId||String(Date.now()),kind:$('#cashKind').value,amount,name,phone:$('#cashPhone').value.trim(),date:{dy:d.dy,dm:d.dm,dd:d.dd},note:$('#cashNote').value.trim(),created:editCashId?(DB.cash.find(x=>x.id===editCashId)?.created||Date.now()):Date.now()};if(editCashId){const i=DB.cash.findIndex(x=>x.id===editCashId);if(i>=0)DB.cash[i]=obj;}else DB.cash.push(obj);saveDB();$('#cashModal').classList.remove('on');renderCash();});
+$('#saveCash').addEventListener('click',()=>{const amount=Number($('#cashAmount').value.replace(/,/g,''))||0;const name=norm($('#cashName').value);if(!amount){alert('مبلغ را وارد کن');return;}if(!name){alert('نام طرف حساب را وارد کن');return;}const d=getDP('cashd');const obj={id:editCashId||String(Date.now()),kind:$('#cashKind').value,method:$('#cashMethod').value,amount,name,phone:$('#cashPhone').value.trim(),date:{dy:d.dy,dm:d.dm,dd:d.dd},note:$('#cashNote').value.trim(),created:editCashId?(DB.cash.find(x=>x.id===editCashId)?.created||Date.now()):Date.now()};if(editCashId){const i=DB.cash.findIndex(x=>x.id===editCashId);if(i>=0)DB.cash[i]=obj;}else DB.cash.push(obj);saveDB();$('#cashModal').classList.remove('on');renderCash();});
 
 /* ================= مشتریان ================= */
 let peopleFilter='all';
@@ -1268,9 +1276,9 @@ function printStatement(){
   const tb=(title,head,rows)=>rows.length?`<h3>${title}</h3><table><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</table>`:'';
   const sr=(a,b)=>`<tr><td>${a}</td><td>${b}</td></tr>`;
   let h=`<div class="pa-top"><h1>${esc(DB.settings.seller||'صورت‌حساب')}</h1><div>صورت‌حساب مشتری: <b>${esc(p.name)}</b>${p.phone?' · '+fa(esc(p.phone)):''}</div><div>تاریخ: ${dateStr(t)}</div></div>`;
-  h+=tb('کالاهای خریداری‌شده',['نام کالا','سریال','تاریخ','قیمت (تومان)'],sold.map(x=>[esc(x.model),esc(x.imei||'—'),x.sellDate?dateStr(x.sellDate):'—',money(x.sell)]).concat(sold.length?[['<b>جمع</b>','','','<b>'+money(sum(sold,x=>x.sell))+'</b>']]:[]));
+  h+=tb('کالاهای خریداری‌شده',['نام کالا','کد','تاریخ','قیمت (تومان)'],sold.map(x=>[esc(x.model),esc(x.imei||'—'),x.sellDate?dateStr(x.sellDate):'—',money(x.sell)]).concat(sold.length?[['<b>جمع</b>','','','<b>'+money(sum(sold,x=>x.sell))+'</b>']]:[]));
   h+=tb('کالاهای خریداری‌شده از شما',['نام کالا','تاریخ','قیمت (تومان)'],bought.map(x=>[esc(x.model),x.buyDate?dateStr(x.buyDate):'—',money(x.buy)]));
-  h+=tb('پرداخت‌های نقدی',['تاریخ','نوع','مبلغ (تومان)','توضیح'],p.cash.slice().sort((a,b)=>(a.created||0)-(b.created||0)).map(c=>[c.date?dateStr(c.date):'—',c.kind==='out'?'پرداخت به شما':'دریافت از شما',money(c.amount),esc(c.note||'')]));
+  h+=tb('پرداخت‌های نقدی',['تاریخ','نوع','مبلغ (تومان)','توضیح'],p.cash.slice().sort((a,b)=>(a.created||0)-(b.created||0)).map(c=>[c.date?dateStr(c.date):'—',c.kind==='out'?'پرداخت به شما':'دریافت از شما'+(c.method==='card'?' (کارت)':''),money(c.amount),esc(c.note||'')]));
   h+=tb('چک‌ها',['نوع','شماره','بانک','سررسید','مبلغ (تومان)','وضعیت'],chs.map(c=>[c.type==='in'?'دریافتی از شما':'پرداختی به شما',c.no?fa(esc(c.no)):'—',esc(c.bank||'—'),dateStr(c),money(c.amount),statusInfo(c).txt]));
   h+='<h3>خلاصه</h3><table class="sum">';
   if(sold.length) h+=sr('جمع کالاهای خریداری‌شده',money(sum(sold,x=>x.sell)));
@@ -1302,7 +1310,7 @@ function renderPhones(){
   const s=phoneStats(); $('#phStock').textContent=fa(s.n); $('#phCap').textContent=money(s.cap); $('#phProfit').textContent=signed(s.profit);
   const l=DB.phones.slice().sort((a,b)=>(b.created||0)-(a.created||0)).filter(x=>phFilter==='all'||(phFilter==='stock')===(x.sell==null));
   if(!l.length){$('#phList').innerHTML='<div class="empty">کالایی ثبت نشده.<br>با دکمه + شروع کن.</div>';return;}
-  $('#phList').innerHTML=l.map(x=>{const sold=x.sell!=null;return `<div class="card"><div class="row"><span class="name">${esc(x.model)}</span><span class="badge ${sold?'done':'stock'}">${sold?'فروخته‌شده':'موجود'}</span></div><div class="meta">${x.imei?'سریال: '+fa(esc(x.imei))+'<br>':''}خرید: ${money(x.buy)}${x.from?' از '+esc(x.from):''}${x.buyDate?' · '+dateStr(x.buyDate):''}${sold?`<br>فروش: ${money(x.sell)}${x.to?' به '+esc(x.to):''}${x.sellDate?' · '+dateStr(x.sellDate):''}<br>سود: <b>${signed(x.sell-x.buy)}</b>`:''}${x.note?'<br>'+esc(x.note):''}</div><div class="actions"><button data-act="edit" data-id="${x.id}">${sold?'ویرایش':'ویرایش / ثبت فروش'}</button><button class="del" data-act="del" data-id="${x.id}">حذف</button></div></div>`;}).join('');
+  $('#phList').innerHTML=l.map(x=>{const sold=x.sell!=null;return `<div class="card"><div class="row"><span class="name">${esc(x.model)}</span><span class="badge ${sold?'done':'stock'}">${sold?'فروخته‌شده':'موجود'}</span></div><div class="meta">${x.imei?'کد: '+fa(esc(x.imei))+'<br>':''}خرید: ${money(x.buy)}${x.from?' از '+esc(x.from):''}${x.buyDate?' · '+dateStr(x.buyDate):''}${sold?`<br>فروش: ${money(x.sell)}${x.to?' به '+esc(x.to):''}${x.sellDate?' · '+dateStr(x.sellDate):''}<br>سود: <b>${signed(x.sell-x.buy)}</b>`:''}${x.note?'<br>'+esc(x.note):''}</div><div class="actions"><button data-act="edit" data-id="${x.id}">${sold?'ویرایش':'ویرایش / ثبت فروش'}</button><button class="del" data-act="del" data-id="${x.id}">حذف</button></div></div>`;}).join('');
 }
 $('#phFilters').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;phFilter=b.dataset.ph;$$('#phFilters button').forEach(x=>x.classList.toggle('on',x===b));renderPhones();});
 $('#phList').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const x=DB.phones.find(v=>v.id===b.dataset.id);if(!x)return;
@@ -1320,18 +1328,63 @@ function openPhoneForm(x){
   $('#phNote').value=x?x.note||'':'';
   const bd=x&&x.buyDate, sd=x&&x.sellDate;
   setDP('pb',bd?{jy:bd.dy,jm:bd.dm,jd:bd.dd}:null); setDP('ps',sd?{jy:sd.dy,jm:sd.dm,jd:sd.dd}:null);
+  resetPay(); ['phTo','phFrom'].forEach(i=>$('#'+i).upd&&$('#'+i).upd());
   $('#phoneModal').classList.add('on');
 }
 $('#savePhone').addEventListener('click',()=>{
   const model=norm($('#phModel').value), buy=num($('#phBuy').value), sr=$('#phSell').value.trim(), sell=sr?num(sr):null;
   if(!model){alert('نام کالا را وارد کن');return;}
   if(!buy){alert('قیمت خرید را وارد کن');return;}
+  const ptot=sell!=null?payTotal():0, prev=editPhId?linked(editPhId):0;
+  if(ptot>0&&!norm($('#phTo').value)){alert('نام خریدار را وارد کن');return;}
+  if(sell!=null&&prev+ptot>sell){alert('جمع پرداخت از قیمت فروش بیشتر است');return;}
   const o={id:editPhId||String(Date.now()),model,imei:$('#phImei').value.trim(),buy,from:norm($('#phFrom').value),buyDate:getDP('pb'),sell,to:sell!=null?norm($('#phTo').value):'',sellDate:sell!=null?getDP('ps'):null,note:$('#phNote').value.trim(),created:Date.now()};
   if(editPhId){const i=DB.phones.findIndex(v=>v.id===editPhId);if(i>=0){o.created=DB.phones[i].created||o.created;DB.phones[i]=o;}}else DB.phones.push(o);
+  if(ptot>0) makePayments(o);
   saveDB(); closePh(); renderPhones();
 });
 function fillNames(){ $('#names').innerHTML=buildPeople().map(p=>`<option value="${esc(p.name)}">`).join(''); }
-document.addEventListener('focusin',e=>{ if(e.target.matches&&e.target.matches('[list=names]')) fillNames(); });
+document.addEventListener('focusin',e=>{ if(e.target.matches&&e.target.matches('[list=names]')) fillNames(); if(e.target.upd) e.target.upd(); });
+
+/* ===== پرداخت چندگانه، اسکن بارکد، مانده مشتری ===== */
+let payN=0;
+const linked=id=>DB.cash.filter(c=>c.ref===id&&c.kind!=='out').reduce((n,c)=>n+(+c.amount||0),0)+DB.checks.filter(c=>c.ref===id&&c.status!=='ret').reduce((n,c)=>n+c.amount,0);
+function payTotal(){ let t=num($('#payCash').value)+num($('#payCard').value); $$('#payChecks .pcA').forEach(i=>t+=num(i.value)); return t; }
+function payInfo(){ const sell=num($('#phSell').value); $('#phPay').hidden=!sell; if(!sell) return; const prev=editPhId?linked(editPhId):0, tot=prev+payTotal(); $('#payInfo').textContent=(prev?'قبلاً پرداخت‌شده: '+money(prev)+' · ':'')+'جمع پرداخت: '+money(tot)+' · باقی‌مانده: '+money(sell-tot); }
+function resetPay(){ $('#payChecks').innerHTML=''; $('#payCash').value=''; $('#payCard').value=''; payInfo(); }
+function addPayCheck(){ const n=++payN, d=document.createElement('div'); d.dataset.n=n; d.style.cssText='border:1px solid #cfd8d4;border-radius:10px;padding:8px;margin:6px 0'; d.innerHTML='<input class="pcA" inputmode="numeric" placeholder="مبلغ چک"><div class="dates"><input class="pcB" placeholder="بانک"><input class="pcN" placeholder="شماره چک" inputmode="numeric"></div><div class="dates" id="pcD'+n+'"></div>'; $('#payChecks').appendChild(d); createDP('pcD'+n,'pc'+n); setDP('pc'+n,null); }
+function makePayments(o){
+  const d=o.sellDate, nm=o.to, rid=()=>String(Date.now())+Math.floor(Math.random()*1000);
+  const cash=(amt,method)=>{ if(amt>0) DB.cash.push({id:rid(),kind:'in',method,amount:amt,name:nm,phone:'',date:{dy:d.dy,dm:d.dm,dd:d.dd},note:'بابت '+o.model,created:Date.now(),ref:o.id}); };
+  cash(num($('#payCash').value),'cash'); cash(num($('#payCard').value),'card');
+  $$('#payChecks > div').forEach(r=>{ const a=num(r.querySelector('.pcA').value); if(!a) return; const c=getDP('pc'+r.dataset.n);
+    DB.checks.push({id:rid(),type:'in',amount:a,name:nm,phone:'',bank:r.querySelector('.pcB').value.trim(),no:r.querySelector('.pcN').value.trim(),dy:c.dy,dm:c.dm,dd:c.dd,status:'open',note:'بابت '+o.model,created:Date.now(),ref:o.id,startJdn:todayJdn()}); });
+}
+$('#phPay').addEventListener('input',e=>{ if(e.target.matches('#payCash,#payCard,.pcA')){ const v=num(e.target.value); e.target.value=v?v.toLocaleString('en-US'):''; } payInfo(); });
+$('#phSell').addEventListener('input',payInfo);
+$('#addPayCheck').addEventListener('click',addPayCheck);
+let scanStream=null,scanTimer=null;
+function stopScan(){ clearInterval(scanTimer); if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; } $('#scanner').hidden=true; }
+async function scanCode(cb){
+  $('#scanner').hidden=false; $('#scanMsg').textContent='بارکد را جلوی دوربین بگیر';
+  try{
+    const det=new BarcodeDetector();
+    scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const v=$('#scanVid'); v.srcObject=scanStream; await v.play();
+    scanTimer=setInterval(async()=>{ try{ const r=await det.detect(v); if(r.length){ const c=r[0].rawValue; stopScan(); cb(c); } }catch(e){} },300);
+  }catch(e){ $('#scanMsg').textContent='دوربین باز نشد؛ اجازه‌ی دوربین را بده'; }
+}
+$('#scanClose').addEventListener('click',stopScan);
+$('#scanBtn').addEventListener('click',()=>scanCode(code=>{ const x=DB.phones.find(v=>v.imei===code&&v.id!==editPhId); if(x){ closePh(); openPhoneForm(x); } else $('#phImei').value=code; }));
+$('#phScan').addEventListener('click',()=>scanCode(code=>{ const x=DB.phones.find(v=>v.imei===code); if(x) openPhoneForm(x); else if(confirm('کالایی با این کد ثبت نیست. کالای جدید ثبت شود؟')){ openPhoneForm(null); $('#phImei').value=code; } }));
+if(!('BarcodeDetector' in window)){ $('#scanBtn').style.display='none'; $('#phScan').style.display='none'; }
+function balHint(id){
+  const inp=$('#'+id), box=document.createElement('div'); box.className='small'; inp.insertAdjacentElement('afterend',box);
+  inp.upd=()=>{ const k=pkey(inp.value); if(!k){ box.textContent=''; return; } const p=buildPeople().find(x=>pkey(x.name)===k); if(!p){ box.textContent='مشتری جدید'; return; } const n=Math.round(p.net); box.innerHTML='مانده: <b>'+(n>0?'بدهکار '+money(n):n<0?'طلبکار '+money(-n):'تسویه')+'</b> · <a href="#" data-op="'+esc(p.name)+'">باز کردن پرونده</a>'; };
+  inp.addEventListener('input',inp.upd);
+}
+['fName','cashName','phTo','phFrom'].forEach(balHint);
+document.addEventListener('click',e=>{ const a=e.target.closest('[data-op]'); if(a){ e.preventDefault(); openPerson(a.dataset.op); } });
 
 /* ================= تنظیمات ================= */
 function renderSettings(){
